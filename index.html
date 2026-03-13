@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AlumniNexus</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="loginPage" class="auth-page">
+  <div class="auth-left">
+    <div class="auth-brand"><div class="brand-logo">AN</div><span class="brand-name">AlumniNexus</span></div>
+    <h1 class="auth-headline">Connecting Alumni,<br><span class="gold">Building Futures</span></h1>
+    <p class="auth-sub">A centralized platform for alumni engagement, mentorship, career opportunities and institutional growth.</p>
+    <div class="auth-stats">
+      <div class="ast"><span class="asn" id="ls-alumni">—</span><span class="asl">Alumni</span></div>
+      <div class="ast"><span class="asn" id="ls-events">—</span><span class="asl">Events</span></div>
+      <div class="ast"><span class="asn" id="ls-jobs">—</span><span class="asl">Jobs</span></div>
+      <div class="ast"><span class="asn" id="ls-mentors">—</span><span class="asl">Mentors</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="atab active" id="loginTab" onclick="switchTab('login')">Sign In</button>
+        <button class="atab" id="registerTab" onclick="switchTab('register')">Register</button>
+      </div>
+      <div id="loginForm">
+        <div class="fg"><label>Email</label><input type="email" class="fi" id="liEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <div class="fg mt1"><label>Password</label>
+          <div class="pw-wrap"><input type="password" class="fi" id="liPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <button class="pw-eye" type="button" onclick="togglePass('liPass',this)">👁</button></div>
+        </div>
+        <div class="fg-right"><a href="#" onclick="showModal('forgotModal');return false;" class="link-sm">Forgot password?</a></div>
+        <button class="btn btn-primary full-btn mt1" onclick="doLogin()">Sign In →</button>
+        <div class="divider"><span>or</span></div>
+        <button class="btn btn-google full-btn" onclick="doGoogleLogin()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+      </div>
+      <div id="registerForm" class="hidden">
+        <div class="form-grid2">
+          <div class="fg"><label>First Name *</label><input type="text" class="fi" id="rFN" placeholder="Arun"/></div>
+          <div class="fg"><label>Last Name *</label><input type="text" class="fi" id="rLN" placeholder="Sharma"/></div>
+        </div>
+        <div class="fg mt1"><label>Email *</label><input type="email" class="fi" id="rEmail" placeholder="you@example.com"/></div>
+        <div class="fg mt1"><label>I am a...</label>
+          <select class="fi" id="rRole" onchange="toggleRegFields()"><option value="alumni">Alumni</option><option value="student">Student</option><option value="recruiter">Recruiter</option></select>
+        </div>
+        <div id="rAlumniFields">
+          <div class="form-grid2 mt1">
+            <div class="fg"><label>Graduation Year</label><input type="number" class="fi" id="rBatch" placeholder="2022"/></div>
+            <div class="fg"><label>Department</label><select class="fi" id="rDept"><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>MBA</option></select></div>
+          </div>
+        </div>
+        <div class="fg mt1"><label>Password * (min 6 chars)</label>
+          <div class="pw-wrap"><input type="password" class="fi" id="rPass" placeholder="••••••••"/>
+          <button class="pw-eye" type="button" onclick="togglePass('rPass',this)">👁</button></div>
+        </div>
+        <button class="btn btn-primary full-btn mt1" onclick="doRegister()">Create Account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden">
+  <nav class="nav">
+    <div class="nav-brand"><span class="nav-logo">AN</span><span class="nav-name">AlumniNexus</span></div>
+    <div class="nav-links">
+      <a class="nav-link active" data-view="dashboard" onclick="showView('dashboard');return false;" href="#">Dashboard</a>
+      <a class="nav-link" data-view="alumni" onclick="showView('alumni');return false;" href="#">Alumni</a>
+      <a class="nav-link" data-view="events" onclick="showView('events');return false;" href="#">Events</a>
+      <a class="nav-link" data-view="mentorship" onclick="showView('mentorship');return false;" href="#">Mentorship</a>
+      <a class="nav-link" data-view="jobs" onclick="showView('jobs');return false;" href="#">Jobs</a>
+      <a class="nav-link" data-view="donations" onclick="showView('donations');return false;" href="#">Donations</a>
+    </div>
+    <div class="nav-right">
+      <span class="role-badge" id="roleDisplay">—</span>
+      <div class="avatar-wrap">
+        <div class="nav-avatar" id="navAvatar" onclick="toggleMenu()">U</div>
+        <div class="user-menu" id="userMenu">
+          <div class="um-head"><div class="um-av" id="umAv">U</div>
+            <div><div class="um-name" id="umName">—</div><div class="um-sub" id="umRole">—</div><div class="um-sub" id="umEmail" style="font-size:.72rem;color:#aaa">—</div></div>
+          </div>
+          <hr/>
+          <a onclick="showView('settings');closeMenu();return false;" href="#">⚙️ Settings</a>
+          <a onclick="showView('notifications');closeMenu();return false;" href="#">🔔 Notifications</a>
+          <hr/>
+          <a onclick="doLogout();return false;" href="#" class="logout-a">🚪 Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <main class="main-content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="vheader">
+        <div><h1 class="vtitle">Welcome, <span class="hl" id="welcomeName">—</span></h1><p class="vsub">Real-time overview of your alumni network</p></div>
+        <div class="vactions admin-only">
+          <button class="btn btn-secondary" onclick="exportCSV()">↓ Export CSV</button>
+          <button class="btn btn-primary" onclick="showModal('addAlumniModal')">+ Add Alumni</button>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card c-blue" onclick="showView('alumni')"><span class="stat-ico">👥</span><div><div class="stat-n" id="dAlumni">0</div><div class="stat-l">Alumni</div></div></div>
+        <div class="stat-card c-green" onclick="showView('events')"><span class="stat-ico">📅</span><div><div class="stat-n" id="dEvents">0</div><div class="stat-l">Events</div></div></div>
+        <div class="stat-card c-amber" onclick="showView('mentorship')"><span class="stat-ico">🎓</span><div><div class="stat-n" id="dMentors">0</div><div class="stat-l">Mentors</div></div></div>
+        <div class="stat-card c-rose" onclick="showView('jobs')"><span class="stat-ico">💼</span><div><div class="stat-n" id="dJobs">0</div><div class="stat-l">Jobs</div></div></div>
+        <div class="stat-card c-purple" onclick="showView('donations')"><span class="stat-ico">🎯</span><div><div class="stat-n" id="dCampaigns">0</div><div class="stat-l">Campaigns</div></div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-hdr"><h3>Recent Activity</h3><span class="live-dot">● Live</span></div>
+          <div id="activityFeed" class="activity-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><h3>Quick Actions</h3></div>
+          <div class="qa-grid">
+            <div class="qa-btn admin-only" onclick="showModal('addAlumniModal')"><div class="qa-ico">👤</div><span>Add Alumni</span></div>
+            <div class="qa-btn admin-only" onclick="showView('events');setTimeout(function(){showModal('addEventModal')},80)"><div class="qa-ico">📅</div><span>Create Event</span></div>
+            <div class="qa-btn admin-only" onclick="showModal('broadcastModal')"><div class="qa-ico">📢</div><span>Broadcast</span></div>
+            <div class="qa-btn admin-only" onclick="showView('donations');setTimeout(function(){showModal('newCampaignModal')},80)"><div class="qa-ico">🎯</div><span>New Campaign</span></div>
+            <div class="qa-btn" onclick="showView('mentorship');setTimeout(function(){showModal('mentorRegModal')},80)"><div class="qa-ico">🤝</div><span>Add Mentor</span></div>
+            <div class="qa-btn" onclick="showView('jobs');setTimeout(function(){showModal('postJobModal')},80)"><div class="qa-ico">💼</div><span>Post Job</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALUMNI -->
+    <div class="view" id="view-alumni">
+      <div class="vheader">
+        <div><h1 class="vtitle">Alumni <span class="hl">Directory</span></h1><p class="vsub" id="alumniSub">Loading...</p></div>
+        <div class="vactions admin-only">
+          <button class="btn btn-secondary" onclick="exportCSV()">↓ Export CSV</button>
+          <button class="btn btn-primary" onclick="showModal('addAlumniModal')">+ Add Alumni</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-box"><span>🔍</span><input type="text" class="fi search-fi" id="alumniSearch" placeholder="Search name, company, batch..." oninput="filterAlumni()"/></div>
+        <select class="fi filter-sel" id="batchFilter" onchange="filterAlumni()"><option value="">All Batches</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option></select>
+        <select class="fi filter-sel" id="deptFilter" onchange="filterAlumni()"><option value="">All Depts</option><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>MBA</option></select>
+      </div>
+      <div class="alumni-grid" id="alumniGrid"></div>
+      <div class="pagination" id="alumniPagination"></div>
+    </div>
+
+    <!-- EVENTS -->
+    <div class="view" id="view-events">
+      <div class="vheader">
+        <div><h1 class="vtitle">Events &amp; <span class="hl">Reunions</span></h1><p class="vsub" id="eventsSub">Loading...</p></div>
+        <div class="vactions admin-only"><button class="btn btn-primary" onclick="showModal('addEventModal')">+ Create Event</button></div>
+      </div>
+      <div class="tab-row">
+        <button class="tab active" onclick="filterEvents('all',this)">All</button>
+        <button class="tab" onclick="filterEvents('upcoming',this)">Upcoming</button>
+        <button class="tab" onclick="filterEvents('ongoing',this)">Ongoing</button>
+        <button class="tab" onclick="filterEvents('past',this)">Past</button>
+      </div>
+      <div class="events-grid" id="eventsGrid"></div>
+    </div>
+
+    <!-- MENTORSHIP -->
+    <div class="view" id="view-mentorship">
+      <div class="vheader">
+        <div><h1 class="vtitle">Mentorship <span class="hl">Program</span></h1><p class="vsub" id="mentorsSub">Loading...</p></div>
+        <div class="vactions">
+          <button class="btn btn-secondary alumni-only" onclick="showModal('mentorRegModal')">Register as Mentor</button>
+          <button class="btn btn-primary student-only" onclick="showModal('menteeRequestModal')">Request Mentor</button>
+          <button class="btn btn-primary admin-only" onclick="showModal('mentorRegModal')">+ Add Mentor</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-box"><span>🔍</span><input type="text" class="fi search-fi" id="mentorSearch" placeholder="Search mentors..." oninput="filterMentors()"/></div>
+        <select class="fi filter-sel" id="mentorDomainF" onchange="filterMentors()"><option value="">All Domains</option><option>Software Engineering</option><option>Data Science</option><option>Product Management</option><option>Finance</option><option>Entrepreneurship</option></select>
+      </div>
+      <div class="mentors-grid" id="mentorsGrid"></div>
+    </div>
+
+    <!-- JOBS -->
+    <div class="view" id="view-jobs">
+      <div class="vheader">
+        <div><h1 class="vtitle">Jobs &amp; <span class="hl">Internships</span></h1><p class="vsub" id="jobsSub">Loading...</p></div>
+        <div class="vactions"><button class="btn btn-primary" id="postJobBtn" onclick="showModal('postJobModal')">+ Post Opportunity</button></div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-box"><span>🔍</span><input type="text" class="fi search-fi" id="jobSearch" placeholder="Search jobs, companies..." oninput="filterJobs()"/></div>
+        <select class="fi filter-sel" id="jobTypeF" onchange="filterJobs()"><option value="">All Types</option><option>Full-time</option><option>Internship</option><option>Part-time</option><option>Contract</option></select>
+        <select class="fi filter-sel" id="jobLocF" onchange="filterJobs()"><option value="">All Locations</option><option>Bangalore</option><option>Mumbai</option><option>Delhi</option><option>Remote</option><option>Chennai</option></select>
+      </div>
+      <div id="jobsList"></div>
+    </div>
+
+    <!-- DONATIONS -->
+    <div class="view" id="view-donations">
+      <div class="vheader">
+        <div><h1 class="vtitle">Donations &amp; <span class="hl">Campaigns</span></h1><p class="vsub" id="donationsSub">Loading...</p></div>
+        <div class="vactions admin-only"><button class="btn btn-primary" onclick="showModal('newCampaignModal')">+ New Campaign</button></div>
+      </div>
+      <div class="campaigns-grid" id="campaignsGrid"></div>
+      <div class="card" style="margin-top:2rem">
+        <div class="card-hdr"><h3>Donation Records</h3><button class="btn btn-sm btn-primary" onclick="showModal('donationModal')">Make Donation</button></div>
+        <div class="table-wrap">
+          <table class="dtable">
+            <thead><tr><th>Donor</th><th>Campaign</th><th>Amount</th><th>Date</th><th>Message</th><th class="admin-only">Action</th></tr></thead>
+            <tbody id="donorsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="view" id="view-settings">
+      <div class="vheader"><h1 class="vtitle">Settings &amp; <span class="hl">Profile</span></h1></div>
+      <div class="settings-layout">
+        <div class="settings-nav">
+          <a class="snav active" onclick="showStab('profile',this)">👤 Profile</a>
+          <a class="snav" onclick="showStab('security',this)">🔒 Security</a>
+          <a class="snav admin-only" onclick="showStab('institution',this)">🏛️ Institution</a>
+        </div>
+        <div class="settings-body">
+          <div class="stab active" id="st-profile">
+            <div class="card">
+              <h3 class="card-title">Profile Information</h3>
+              <div class="profile-top"><div class="prof-av" id="profAv">U</div>
+                <div><div class="prof-name" id="profName">—</div><div class="prof-email" id="profEmail">—</div></div>
+              </div>
+              <div class="form-grid2 mt1">
+                <div class="fg"><label>First Name *</label><input type="text" class="fi" id="sFirstName"/></div>
+                <div class="fg"><label>Last Name *</label><input type="text" class="fi" id="sLastName"/></div>
+                <div class="fg"><label>Email (read-only)</label><input type="email" class="fi" id="sEmail" readonly style="opacity:.6"/></div>
+                <div class="fg"><label>Phone</label><input type="tel" class="fi" id="sPhone" placeholder="+91 XXXXX XXXXX"/></div>
+                <div class="fg"><label>Company</label><input type="text" class="fi" id="sCompany"/></div>
+                <div class="fg"><label>Designation</label><input type="text" class="fi" id="sDesig"/></div>
+                <div class="fg"><label>City</label><input type="text" class="fi" id="sCity"/></div>
+                <div class="fg"><label>LinkedIn</label><input type="url" class="fi" id="sLinkedin"/></div>
+                <div class="fg full2"><label>Bio</label><textarea class="fi" id="sBio" rows="3"></textarea></div>
+              </div>
+              <div style="display:flex;gap:.75rem;margin-top:1.5rem">
+                <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+                <button class="btn btn-secondary" onclick="loadProfile()">Reset</button>
+              </div>
+            </div>
+          </div>
+          <div class="stab" id="st-security">
+            <div class="card"><h3 class="card-title">Change Password</h3>
+              <div class="form-grid2">
+                <div class="fg full2"><label>Current Password</label><input type="password" class="fi" id="currPass" placeholder="••••••••"/></div>
+                <div class="fg"><label>New Password</label><input type="password" class="fi" id="newPass" placeholder="Min 6 chars"/></div>
+                <div class="fg"><label>Confirm Password</label><input type="password" class="fi" id="confPass" placeholder="••••••••"/></div>
+              </div>
+              <button class="btn btn-primary" style="margin-top:1.5rem" onclick="savePassword()">Update Password</button>
+            </div>
+          </div>
+          <div class="stab" id="st-institution">
+            <div class="card"><h3 class="card-title">Institution Settings</h3>
+              <div class="form-grid2">
+                <div class="fg full2"><label>Institution Name</label><input type="text" class="fi" id="instName" value="National Institute of Technology"/></div>
+                <div class="fg"><label>City</label><input type="text" class="fi" id="instCity" value="Tiruchirappalli"/></div>
+                <div class="fg"><label>State</label><input type="text" class="fi" id="instState" value="Tamil Nadu"/></div>
+                <div class="fg full2"><label>Website</label><input type="url" class="fi" id="instWeb" value="https://www.nitt.edu"/></div>
+              </div>
+              <button class="btn btn-primary" style="margin-top:1rem" onclick="saveInstitution()">Save Settings</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="view" id="view-notifications">
+      <div class="vheader"><h1 class="vtitle">Notifications</h1><button class="btn btn-secondary" onclick="markAllRead()">Mark all read</button></div>
+      <div class="card"><div id="notifList"></div></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-ov" id="confirmModal" onclick="closeOv(event)">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><h2>⚠️ Confirm Delete</h2><button class="modal-x" onclick="closeModal('confirmModal')">✕</button></div>
+    <div class="modal-body"><p id="confirmMsg" style="color:var(--text);font-size:.95rem">Are you sure? This cannot be undone.</p></div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button><button class="btn btn-danger" id="confirmOkBtn">Yes, Delete</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="addAlumniModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>Add New Alumni</h2><button class="modal-x" onclick="closeModal('addAlumniModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid2">
+        <div class="fg"><label>First Name *</label><input type="text" class="fi" id="aFN" placeholder="Arun"/></div>
+        <div class="fg"><label>Last Name *</label><input type="text" class="fi" id="aLN" placeholder="Sharma"/></div>
+        <div class="fg"><label>Email *</label><input type="email" class="fi" id="aEmail" placeholder="arun@email.com"/></div>
+        <div class="fg"><label>Phone</label><input type="tel" class="fi" id="aPhone" placeholder="+91 XXXXX XXXXX"/></div>
+        <div class="fg"><label>Graduation Year *</label><input type="number" class="fi" id="aBatch" placeholder="2022"/></div>
+        <div class="fg"><label>Department</label><select class="fi" id="aDept"><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>MBA</option></select></div>
+        <div class="fg"><label>Company</label><input type="text" class="fi" id="aCompany" placeholder="Google"/></div>
+        <div class="fg"><label>Designation</label><input type="text" class="fi" id="aDesig" placeholder="Software Engineer"/></div>
+        <div class="fg"><label>City</label><input type="text" class="fi" id="aCity" placeholder="Bangalore"/></div>
+        <div class="fg"><label>Industry</label><select class="fi" id="aIndustry"><option>Technology</option><option>Finance</option><option>Healthcare</option><option>Manufacturing</option><option>Education</option><option>Other</option></select></div>
+        <div class="fg full2"><label>LinkedIn</label><input type="url" class="fi" id="aLinkedin" placeholder="linkedin.com/in/..."/></div>
+      </div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('addAlumniModal')">Cancel</button><button class="btn btn-primary" onclick="addAlumni()">Add Alumni</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="addEventModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>Create Event</h2><button class="modal-x" onclick="closeModal('addEventModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid2">
+        <div class="fg full2"><label>Event Title *</label><input type="text" class="fi" id="eTitle" placeholder="Annual Alumni Meet 2025"/></div>
+        <div class="fg"><label>Type</label><select class="fi" id="eType"><option>Reunion</option><option>Webinar</option><option>Workshop</option><option>Networking</option><option>Fundraiser</option></select></div>
+        <div class="fg"><label>Status</label><select class="fi" id="eStatus"><option value="upcoming">Upcoming</option><option value="ongoing">Ongoing</option><option value="past">Past</option></select></div>
+        <div class="fg"><label>Date *</label><input type="date" class="fi" id="eDate"/></div>
+        <div class="fg"><label>Time</label><input type="time" class="fi" id="eTime"/></div>
+        <div class="fg"><label>Venue</label><input type="text" class="fi" id="eVenue" placeholder="Auditorium / Online"/></div>
+        <div class="fg"><label>Max Attendees</label><input type="number" class="fi" id="eMax" placeholder="500"/></div>
+        <div class="fg"><label>Entry Fee (₹)</label><input type="number" class="fi" id="eFee" value="0"/></div>
+        <div class="fg full2"><label>Description</label><textarea class="fi" id="eDesc" rows="3" placeholder="Describe the event..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('addEventModal')">Cancel</button><button class="btn btn-primary" onclick="createEvent()">Create Event</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="mentorRegModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>Add Mentor</h2><button class="modal-x" onclick="closeModal('mentorRegModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid2">
+        <div class="fg"><label>Full Name *</label><input type="text" class="fi" id="mrName" placeholder="Rahul Krishnan"/></div>
+        <div class="fg"><label>Email *</label><input type="email" class="fi" id="mrEmail" placeholder="mentor@email.com"/></div>
+        <div class="fg"><label>Company *</label><input type="text" class="fi" id="mrCompany" placeholder="Google"/></div>
+        <div class="fg"><label>Role *</label><input type="text" class="fi" id="mrRole" placeholder="Senior Engineer"/></div>
+        <div class="fg full2"><label>Domains * (comma separated)</label><input type="text" class="fi" id="mrDomains" placeholder="Software Engineering, Career Guidance"/></div>
+        <div class="fg"><label>Experience (years)</label><input type="number" class="fi" id="mrExp" placeholder="5"/></div>
+        <div class="fg"><label>Available?</label><select class="fi" id="mrAvail"><option value="true">Yes</option><option value="false">No – Busy</option></select></div>
+        <div class="fg full2"><label>Bio</label><textarea class="fi" id="mrBio" rows="3" placeholder="Tell students about yourself..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('mentorRegModal')">Cancel</button><button class="btn btn-primary" onclick="addMentor()">Add Mentor</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="menteeRequestModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>Request a Mentor</h2><button class="modal-x" onclick="closeModal('menteeRequestModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid2">
+        <div class="fg full2"><label>Domain Needed</label><select class="fi"><option>Software Engineering</option><option>Data Science</option><option>Product Management</option><option>Finance</option><option>Entrepreneurship</option></select></div>
+        <div class="fg full2"><label>Your Goal</label><textarea class="fi" id="mrGoal" rows="3" placeholder="What do you want to achieve?"></textarea></div>
+        <div class="fg"><label>Frequency</label><select class="fi"><option>Weekly</option><option>Bi-weekly</option><option>Monthly</option></select></div>
+        <div class="fg"><label>Mode</label><select class="fi"><option>Online</option><option>In-person</option><option>Either</option></select></div>
+      </div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('menteeRequestModal')">Cancel</button><button class="btn btn-primary" onclick="requestMentorship()">Submit Request</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="postJobModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>Post Job / Internship</h2><button class="modal-x" onclick="closeModal('postJobModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid2">
+        <div class="fg full2"><label>Job Title *</label><input type="text" class="fi" id="jTitle" placeholder="Software Engineer Intern"/></div>
+        <div class="fg"><label>Company *</label><input type="text" class="fi" id="jCompany" placeholder="Your Company"/></div>
+        <div class="fg"><label>Type</label><select class="fi" id="jType"><option>Full-time</option><option>Internship</option><option>Part-time</option><option>Contract</option></select></div>
+        <div class="fg"><label>Location</label><input type="text" class="fi" id="jLocation" placeholder="Bangalore / Remote"/></div>
+        <div class="fg"><label>Salary / Stipend</label><input type="text" class="fi" id="jSalary" placeholder="₹8-12 LPA"/></div>
+        <div class="fg"><label>Application Deadline</label><input type="date" class="fi" id="jDeadline"/></div>
+        <div class="fg full2"><label>Description</label><textarea class="fi" id="jDesc" rows="3" placeholder="Describe the role..."></textarea></div>
+        <div class="fg full2"><label>Apply Link</label><input type="url" class="fi" id="jLink" placeholder="https://careers.company.com/"/></div>
+      </div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('postJobModal')">Cancel</button><button class="btn btn-primary" onclick="postJob()">Post Opportunity</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="donationModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>💰 Make a Donation</h2><button class="modal-x" onclick="closeModal('donationModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>Select Campaign *</label><select class="fi" id="dCampaign"></select></div>
+      <div class="fg mt1"><label>Amount (₹)</label>
+        <div class="amt-row">
+          <button class="amt-btn" type="button" onclick="pickAmt(500,this)">₹500</button>
+          <button class="amt-btn" type="button" onclick="pickAmt(1000,this)">₹1,000</button>
+          <button class="amt-btn active" type="button" onclick="pickAmt(2500,this)">₹2,500</button>
+          <button class="amt-btn" type="button" onclick="pickAmt(5000,this)">₹5,000</button>
+        </div>
+        <input type="number" class="fi" id="donAmt" value="2500" style="margin-top:.6rem" min="1"/>
+      </div>
+      <div class="fg mt1"><label>Message (optional)</label><textarea class="fi" id="donMsg" rows="2" placeholder="A note..."></textarea></div>
+      <div class="fg mt1"><label class="check-lbl"><input type="checkbox" id="anonChk"/> Remain anonymous</label></div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('donationModal')">Cancel</button><button class="btn btn-primary" onclick="makeDonation()">Donate Now</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="newCampaignModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>🎯 Create Campaign</h2><button class="modal-x" onclick="closeModal('newCampaignModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid2">
+        <div class="fg full2"><label>Campaign Title *</label><input type="text" class="fi" id="cTitle" placeholder="Scholarship Fund 2026"/></div>
+        <div class="fg"><label>Target Amount (₹) *</label><input type="number" class="fi" id="cTarget" placeholder="500000"/></div>
+        <div class="fg"><label>End Date</label><input type="date" class="fi" id="cEndDate"/></div>
+        <div class="fg"><label>Icon (emoji)</label><input type="text" class="fi" id="cIcon" placeholder="🎓" maxlength="2"/></div>
+        <div class="fg full2"><label>Description</label><textarea class="fi" id="cDesc" rows="3" placeholder="What this fund will be used for..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('newCampaignModal')">Cancel</button><button class="btn btn-primary" onclick="createCampaign()">Launch Campaign</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="forgotModal" onclick="closeOv(event)">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><h2>Reset Password</h2><button class="modal-x" onclick="closeModal('forgotModal')">✕</button></div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">We'll send a reset link to your email.</p>
+      <div class="fg"><label>Email</label><input type="email" class="fi" id="forgotEmail" placeholder="you@example.com"/></div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('forgotModal')">Cancel</button><button class="btn btn-primary" onclick="sendReset()">Send Reset Link</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="broadcastModal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr"><h2>📢 Broadcast</h2><button class="modal-x" onclick="closeModal('broadcastModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>Recipients</label><select class="fi" id="bRecip"><option>All Alumni</option><option>Batch 2024</option><option>CS Department</option><option>Mentors Only</option></select></div>
+      <div class="fg mt1"><label>Subject *</label><input type="text" class="fi" id="bSubject" placeholder="Important Announcement"/></div>
+      <div class="fg mt1"><label>Message *</label><textarea class="fi" id="bMessage" rows="5" placeholder="Type your message..."></textarea></div>
+    </div>
+    <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('broadcastModal')">Cancel</button><button class="btn btn-primary" onclick="sendBroadcast()">Send</button></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="app.js"></script>
+</body>
+</html>
